@@ -19,6 +19,7 @@ export const config = {
   // External Services
   walletConnectProjectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || null,
   alchemyId: process.env.NEXT_PUBLIC_ALCHEMY_ID || null,
+  ipfsGateway: process.env.NEXT_PUBLIC_IPFS_GATEWAY || 'https://ipfs.io/ipfs/',
   
   // API Configuration
   apiUrl: process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001',

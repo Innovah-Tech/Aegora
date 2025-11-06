@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import Head from 'next/head';
+import { useRouter } from 'next/router';
 import { useAccount } from 'wagmi';
 import { motion } from 'framer-motion';
 import { 
@@ -18,9 +19,14 @@ import {
   XCircle
 } from 'lucide-react';
 import Navbar from '../components/Navbar';
+import { StatsSkeleton } from '../components/Skeleton';
+import TransactionHistory from '../components/TransactionHistory';
 import config from '../config/env';
+import { showToast } from '../utils/toast';
+import { useRegisterJuror } from '../utils/contracts';
 
 export default function DisputesPage() {
+  const router = useRouter();
   const { address, isConnected } = useAccount();
   const [disputes, setDisputes] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -29,10 +35,11 @@ export default function DisputesPage() {
   const [selectedDispute, setSelectedDispute] = useState(null);
   const [showBecomeJurorModal, setShowBecomeJurorModal] = useState(false);
   const [jurorStake, setJurorStake] = useState('');
-  const [isRegistering, setIsRegistering] = useState(false);
   const [currentJuror, setCurrentJuror] = useState(null);
   const [jurorStats, setJurorStats] = useState(null);
   const [errorMsg, setErrorMsg] = useState('');
+  
+  const { registerJuror, isLoading: isRegistering } = useRegisterJuror();
 
   useEffect(() => {
     fetchDisputes();
@@ -58,7 +65,9 @@ export default function DisputesPage() {
       }
     } catch (error) {
       console.error('Error fetching disputes:', error);
-      setErrorMsg('Failed to load disputes. Is the backend and MongoDB running?');
+      const errorMessage = error?.message || 'Failed to load disputes. Is the backend and MongoDB running?';
+      setErrorMsg(errorMessage);
+      showToast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -90,7 +99,7 @@ export default function DisputesPage() {
   });
 
   const handleViewDispute = (dispute) => {
-    setSelectedDispute(dispute);
+    router.push(`/disputes/${dispute.disputeId}`);
   };
 
   const checkJurorStatus = async () => {
@@ -112,49 +121,29 @@ export default function DisputesPage() {
 
   const handleBecomeJuror = async () => {
     if (!isConnected) {
-      alert('Please connect your wallet first');
+      showToast.error('Please connect your wallet first');
       return;
     }
 
-    if (!jurorStake || parseFloat(jurorStake) < 1000) {
-      alert('Minimum stake required is 1000 AEG tokens');
+    const stakeAmount = parseFloat(jurorStake);
+    if (!jurorStake || stakeAmount < 1000) {
+      showToast.error('Minimum stake required is 1000 AEG tokens');
       return;
     }
 
     try {
-      setIsRegistering(true);
-      const response = await fetch(`${config.apiUrl}/api/jurors/register`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          address: address,
-          stake: parseFloat(jurorStake)
-        })
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        alert('Successfully registered as a juror!');
-        setShowBecomeJurorModal(false);
-        setJurorStake('');
-        checkJurorStatus();
-      } else {
-        alert('Error registering as juror: ' + data.message);
-      }
+      await registerJuror(stakeAmount);
+      setShowBecomeJurorModal(false);
+      setJurorStake('');
+      checkJurorStatus();
     } catch (error) {
       console.error('Error registering as juror:', error);
-      alert('Error registering as juror');
-    } finally {
-      setIsRegistering(false);
     }
   };
 
   const handleUnregisterJuror = async () => {
     if (!isConnected) {
-      alert('Please connect your wallet first');
+      showToast.error('Please connect your wallet first');
       return;
     }
 
@@ -163,7 +152,8 @@ export default function DisputesPage() {
     }
 
     try {
-      setIsRegistering(true);
+      // This would call smart contract unregisterJuror
+      // For now, use API
       const response = await fetch(`${config.apiUrl}/api/jurors/unregister`, {
         method: 'POST',
         headers: {
@@ -177,45 +167,20 @@ export default function DisputesPage() {
       const data = await response.json();
 
       if (data.success) {
-        alert('Successfully unregistered as a juror!');
+        showToast.success('Successfully unregistered as a juror!');
         setCurrentJuror(null);
       } else {
-        alert('Error unregistering as juror: ' + data.message);
+        showToast.error(data.message || 'Error unregistering as juror');
       }
     } catch (error) {
       console.error('Error unregistering as juror:', error);
-      alert('Error unregistering as juror');
-    } finally {
-      setIsRegistering(false);
+      showToast.error('Failed to unregister as juror', error);
     }
   };
 
   const handleVote = async (disputeId, vote) => {
-    try {
-      const response = await fetch(`${config.apiUrl}/api/disputes/${disputeId}/vote`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          jurorAddress: address,
-          vote: vote
-        })
-      });
-      
-      const data = await response.json();
-      
-      if (data.success) {
-        // Refresh disputes
-        fetchDisputes();
-        setSelectedDispute(null);
-      } else {
-        alert('Error casting vote: ' + data.message);
-      }
-    } catch (error) {
-      console.error('Error casting vote:', error);
-      alert('Error casting vote');
-    }
+    // Voting is now handled in the detail page with commit-reveal
+    router.push(`/disputes/${disputeId}`);
   };
 
   const stats = {
@@ -386,6 +351,7 @@ export default function DisputesPage() {
                     onClick={handleUnregisterJuror}
                     disabled={isRegistering}
                     className="px-4 py-2 text-sm font-medium text-red-700 bg-red-100 rounded-lg hover:bg-red-200 transition-colors disabled:opacity-50"
+                    aria-label="Unregister as juror"
                   >
                     {isRegistering ? 'Unregistering...' : 'Unregister'}
                   </button>
@@ -403,7 +369,10 @@ export default function DisputesPage() {
           </div>
 
           {/* Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+          {loading ? (
+            <StatsSkeleton />
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -536,9 +505,16 @@ export default function DisputesPage() {
 
           {/* Disputes Grid */}
           {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <RefreshCw className="w-8 h-8 animate-spin text-blue-600" />
-              <span className="ml-2 text-gray-600">Loading disputes...</span>
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <div key={i} className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 animate-pulse">
+                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/3 mb-4"></div>
+                  <div className="space-y-2">
+                    <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                    <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-5/6"></div>
+                  </div>
+                </div>
+              ))}
             </div>
           ) : filteredDisputes.length === 0 ? (
             <div className="text-center py-12">
@@ -552,11 +528,16 @@ export default function DisputesPage() {
               </p>
             </div>
           ) : (
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {filteredDisputes.map((dispute, index) => (
-                <DisputeCard key={dispute.disputeId} dispute={dispute} />
-              ))}
-            </div>
+            <>
+              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-8">
+                {filteredDisputes.map((dispute, index) => (
+                  <DisputeCard key={dispute.disputeId} dispute={dispute} />
+                ))}
+              </div>
+              
+              {/* Transaction History */}
+              <TransactionHistory />
+            </>
           )}
         </div>
 
@@ -638,6 +619,7 @@ export default function DisputesPage() {
                     onClick={handleBecomeJuror}
                     disabled={isRegistering || !jurorStake || parseFloat(jurorStake) < 1000}
                     className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    aria-label="Register as juror"
                   >
                     {isRegistering ? 'Registering...' : 'Register as Juror'}
                   </button>

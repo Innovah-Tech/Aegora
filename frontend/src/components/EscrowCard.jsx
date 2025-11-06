@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useRouter } from 'next/router';
 import { motion } from 'framer-motion';
 import { 
   Clock, 
@@ -13,6 +14,7 @@ import {
 import { formatDistanceToNow } from 'date-fns';
 
 const EscrowCard = ({ escrow, onView, onConfirm, onDispute }) => {
+  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
 
   const getStatusColor = (status) => {
@@ -139,8 +141,9 @@ const EscrowCard = ({ escrow, onView, onConfirm, onDispute }) => {
       {/* Actions */}
       <div className="flex space-x-2">
         <button
-          onClick={() => onView(escrow)}
+          onClick={() => router.push(`/escrow/${escrow.escrowId}`)}
           className="flex-1 flex items-center justify-center space-x-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+          aria-label={`View escrow ${escrow.escrowId} details`}
         >
           <Eye className="w-4 h-4" />
           <span>View</span>
@@ -152,6 +155,7 @@ const EscrowCard = ({ escrow, onView, onConfirm, onDispute }) => {
               onClick={handleConfirm}
               disabled={isLoading}
               className="flex-1 flex items-center justify-center space-x-2 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              aria-label="Confirm escrow completion"
             >
               <CheckCircle className="w-4 h-4" />
               <span>{isLoading ? 'Confirming...' : 'Confirm'}</span>
@@ -160,6 +164,7 @@ const EscrowCard = ({ escrow, onView, onConfirm, onDispute }) => {
               onClick={handleDispute}
               disabled={isLoading}
               className="flex-1 flex items-center justify-center space-x-2 px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              aria-label="Create dispute for this escrow"
             >
               <AlertTriangle className="w-4 h-4" />
               <span>{isLoading ? 'Disputing...' : 'Dispute'}</span>

@@ -14,7 +14,12 @@ import {
 } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import EscrowCard from '../components/EscrowCard';
+import { StatsSkeleton, EscrowCardSkeleton } from '../components/Skeleton';
+import { IPFSUpload } from '../components/IPFSUpload';
 import config from '../config/env';
+import { showToast } from '../utils/toast';
+import { useCreateEscrowETH } from '../utils/contracts';
+import { isValidIPFSHash } from '../utils/ipfs';
 
 export default function EscrowPage() {
   const { address, isConnected } = useAccount();
@@ -24,6 +29,9 @@ export default function EscrowPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [termsHash, setTermsHash] = useState('');
+  
+  const { createEscrow, isLoading: isCreatingEscrow } = useCreateEscrowETH();
 
   useEffect(() => {
     fetchEscrows();
@@ -45,7 +53,9 @@ export default function EscrowPage() {
       }
     } catch (error) {
       console.error('Error fetching escrows:', error);
-      setErrorMsg('Failed to load escrows. Is the backend and MongoDB running?');
+      const errorMessage = error?.message || 'Failed to load escrows. Is the backend and MongoDB running?';
+      setErrorMsg(errorMessage);
+      showToast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -82,18 +92,24 @@ export default function EscrowPage() {
       const data = await response.json();
       
       if (data.success) {
-        // Refresh escrows
+        showToast.success('Escrow confirmed successfully!');
         fetchEscrows();
       } else {
-        alert('Error confirming escrow: ' + data.message);
+        showToast.error(data.message || 'Error confirming escrow');
       }
     } catch (error) {
       console.error('Error confirming escrow:', error);
-      alert('Error confirming escrow');
+      showToast.error('Failed to confirm escrow', error);
     }
   };
 
   const handleDisputeEscrow = async (escrowId) => {
+    const evidenceHash = prompt('Enter IPFS hash of evidence (or upload file first):');
+    if (!evidenceHash || !isValidIPFSHash(evidenceHash)) {
+      showToast.error('Please provide a valid IPFS hash');
+      return;
+    }
+
     try {
       const response = await fetch(`${config.apiUrl}/api/escrow/${escrowId}/dispute`, {
         method: 'POST',
@@ -102,7 +118,7 @@ export default function EscrowPage() {
         },
         body: JSON.stringify({
           userAddress: address,
-          evidenceHash: 'QmExampleHash', // This would be uploaded to IPFS
+          evidenceHash,
           evidenceDescription: 'Dispute evidence'
         })
       });
@@ -110,14 +126,14 @@ export default function EscrowPage() {
       const data = await response.json();
       
       if (data.success) {
-        // Refresh escrows
+        showToast.success('Dispute created successfully!');
         fetchEscrows();
       } else {
-        alert('Error creating dispute: ' + data.message);
+        showToast.error(data.message || 'Error creating dispute');
       }
     } catch (error) {
       console.error('Error creating dispute:', error);
-      alert('Error creating dispute');
+      showToast.error('Failed to create dispute', error);
     }
   };
 
@@ -125,7 +141,7 @@ export default function EscrowPage() {
     e.preventDefault();
     
     if (!isConnected) {
-      alert('Please connect your wallet first');
+      showToast.error('Please connect your wallet first');
       return;
     }
 
@@ -134,33 +150,44 @@ export default function EscrowPage() {
     const amount = formData.get('amount');
     const description = formData.get('description');
 
+    // Validate seller address
+    if (!sellerAddress || !/^0x[a-fA-F0-9]{40}$/.test(sellerAddress)) {
+      showToast.error('Please enter a valid seller address');
+      return;
+    }
+
+    // Validate amount
+    const amountNum = parseFloat(amount);
+    if (!amountNum || amountNum <= 0) {
+      showToast.error('Please enter a valid amount');
+      return;
+    }
+
+    // Validate or require terms hash
+    if (!termsHash || !isValidIPFSHash(termsHash)) {
+      showToast.error('Please upload terms document or provide IPFS hash');
+      return;
+    }
+
     try {
-      const response = await fetch(`${config.apiUrl}/api/escrow`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          buyer: address,
-          seller: sellerAddress,
-          amount: parseFloat(amount),
-          description: description || '',
-          termsHash: 'QmExampleTermsHash' // This would be uploaded to IPFS
-        })
-      });
+      // Use smart contract to create escrow
+      const toastId = showToast.loading('Creating escrow...');
+      
+      await createEscrow(
+        sellerAddress,
+        null, // arbitrator (null for random selection)
+        termsHash,
+        amountNum
+      );
 
-      const data = await response.json();
-
-      if (data.success) {
-        alert('Escrow created successfully!');
-        setShowCreateModal(false);
-        fetchEscrows(); // Refresh the list
-      } else {
-        alert('Error creating escrow: ' + data.message);
-      }
+      showToast.success('Escrow created successfully!');
+      setShowCreateModal(false);
+      setTermsHash('');
+      e.target.reset();
+      fetchEscrows();
     } catch (error) {
       console.error('Error creating escrow:', error);
-      alert('Error creating escrow');
+      showToast.error('Failed to create escrow', error);
     }
   };
 
@@ -203,7 +230,10 @@ export default function EscrowPage() {
           </div>
 
           {/* Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+          {loading ? (
+            <StatsSkeleton />
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -262,7 +292,8 @@ export default function EscrowPage() {
                 </div>
               </div>
             </motion.div>
-          </div>
+            </div>
+          )}
 
           {/* Filters */}
           <div className="bg-white p-6 rounded-lg shadow-sm mb-8">
@@ -307,9 +338,10 @@ export default function EscrowPage() {
 
           {/* Escrows Grid */}
           {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <RefreshCw className="w-8 h-8 animate-spin text-blue-600" />
-              <span className="ml-2 text-gray-600">Loading escrows...</span>
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <EscrowCardSkeleton key={i} />
+              ))}
             </div>
           ) : filteredEscrows.length === 0 ? (
             <div className="text-center py-12">
@@ -401,7 +433,7 @@ export default function EscrowPage() {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Description
+                      Description (Optional)
                     </label>
                     <textarea
                       name="description"
@@ -409,6 +441,27 @@ export default function EscrowPage() {
                       rows={3}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
+                  </div>
+
+                  <div>
+                    <IPFSUpload
+                      label="Terms Document (IPFS)"
+                      accept={{
+                        'application/pdf': ['.pdf'],
+                        'text/plain': ['.txt'],
+                        'application/json': ['.json'],
+                      }}
+                      onUploadComplete={(hash) => {
+                        if (hash) {
+                          setTermsHash(hash);
+                        }
+                      }}
+                    />
+                    {termsHash && (
+                      <p className="mt-2 text-xs text-green-600 dark:text-green-400">
+                        ✓ Terms uploaded: {termsHash.slice(0, 20)}...
+                      </p>
+                    )}
                   </div>
 
                   <div className="flex space-x-4">
@@ -421,9 +474,10 @@ export default function EscrowPage() {
                     </button>
                     <button
                       type="submit"
-                      className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                      disabled={isCreatingEscrow || !termsHash}
+                      className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      Create Escrow
+                      {isCreatingEscrow ? 'Creating...' : 'Create Escrow'}
                     </button>
                   </div>
                 </form>
