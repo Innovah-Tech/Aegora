@@ -5,9 +5,10 @@ const Escrow = require('../db/models/Escrow');
 const User = require('../db/models/User');
 const Reputation = require('../db/models/Reputation');
 const logger = require('../utils/logger');
+const { validate, escrowSchemas } = require('../middleware/validation');
 
 // Get all escrows
-router.get('/', async (req, res) => {
+router.get('/', validate(escrowSchemas.list, 'query'), async (req, res) => {
   try {
     // If MongoDB is not connected, return an empty list so the UI can load in dev/mock mode
     if (mongoose.connection.readyState !== 1) {
@@ -86,18 +87,11 @@ router.get('/:id', async (req, res) => {
 });
 
 // Create new escrow
-router.post('/', async (req, res) => {
+router.post('/', validate(escrowSchemas.create), async (req, res) => {
   try {
     const { buyer, seller, arbitrator, amount, tokenAddress, termsHash } = req.body;
     
-    // Validate required fields
-    if (!buyer || !seller || !amount || !termsHash) {
-      return res.status(400).json({
-        success: false,
-        message: 'Missing required fields'
-      });
-    }
-    
+    // Additional validation (buyer != seller) - Joi validation handles other checks
     if (buyer.toLowerCase() === seller.toLowerCase()) {
       return res.status(400).json({
         success: false,
@@ -146,16 +140,9 @@ router.post('/', async (req, res) => {
 });
 
 // Confirm completion
-router.post('/:id/confirm', async (req, res) => {
+router.post('/:id/confirm', validate(escrowSchemas.confirm), async (req, res) => {
   try {
     const { userAddress } = req.body;
-    
-    if (!userAddress) {
-      return res.status(400).json({
-        success: false,
-        message: 'User address is required'
-      });
-    }
     
     const escrow = await Escrow.findOne({ escrowId: req.params.id });
     
@@ -223,16 +210,9 @@ router.post('/:id/confirm', async (req, res) => {
 });
 
 // Create dispute from escrow
-router.post('/:id/dispute', async (req, res) => {
+router.post('/:id/dispute', validate(escrowSchemas.dispute), async (req, res) => {
   try {
     const { userAddress, evidenceHash, evidenceDescription } = req.body;
-    
-    if (!userAddress || !evidenceHash) {
-      return res.status(400).json({
-        success: false,
-        message: 'Missing required fields'
-      });
-    }
     
     const escrow = await Escrow.findOne({ escrowId: req.params.id });
     

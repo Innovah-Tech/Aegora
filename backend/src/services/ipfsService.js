@@ -1,15 +1,31 @@
-// const { create } = require('ipfs-http-client'); // Temporarily disabled due to package issues
 const logger = require('../utils/logger');
 
 class IPFSService {
   constructor() {
     this.client = null;
     this.gateway = process.env.IPFS_GATEWAY || 'https://ipfs.io/ipfs/';
+    this.ipfsEnabled = process.env.IPFS_ENABLED === 'true';
     this.init();
   }
 
   async init() {
+    if (!this.ipfsEnabled) {
+      logger.info('IPFS is disabled. Using gateway-only mode.');
+      return;
+    }
+
     try {
+      // Try to require ipfs-http-client (will fail if not installed)
+      let create;
+      try {
+        const ipfsModule = require('ipfs-http-client');
+        create = ipfsModule.create;
+      } catch (requireError) {
+        logger.warn('ipfs-http-client not installed. Install with: npm install ipfs-http-client');
+        logger.info('Using gateway-only mode');
+        return;
+      }
+
       const ipfsUrl = process.env.IPFS_URL || 'http://localhost:5001';
       this.client = create({ url: ipfsUrl });
       
@@ -18,6 +34,7 @@ class IPFSService {
       logger.info(`Connected to IPFS node: ${version.version}`);
     } catch (error) {
       logger.error('Failed to connect to IPFS:', error);
+      logger.warn('Falling back to gateway-only mode');
       // Fallback to public gateway
       this.client = null;
     }
@@ -31,7 +48,7 @@ class IPFSService {
   async uploadFile(file) {
     try {
       if (!this.client) {
-        throw new Error('IPFS client not available');
+        throw new Error('IPFS client not available. Enable IPFS_ENABLED=true or install ipfs-http-client');
       }
 
       const result = await this.client.add(file.content, {
@@ -57,7 +74,7 @@ class IPFSService {
   async uploadJSON(data) {
     try {
       if (!this.client) {
-        throw new Error('IPFS client not available');
+        throw new Error('IPFS client not available. Enable IPFS_ENABLED=true or install ipfs-http-client');
       }
 
       const jsonString = JSON.stringify(data, null, 2);

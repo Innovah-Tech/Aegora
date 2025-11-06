@@ -81,30 +81,70 @@ contract EscrowContract is ReentrancyGuard, Ownable {
     }
     
     /**
-     * @dev Create a new escrow
+     * @dev Create a new escrow with ETH
      * @param seller Address of the seller
      * @param arbitrator Address of the arbitrator (can be zero for random selection)
-     * @param tokenAddress Address of the token (zero for ETH)
      * @param termsHash IPFS hash of the terms
      */
     function createEscrow(
         address seller,
         address arbitrator,
-        address tokenAddress,
         string memory termsHash
     ) external payable nonReentrant returns (uint256) {
         require(seller != address(0), "EscrowContract: invalid seller");
         require(seller != msg.sender, "EscrowContract: cannot escrow with self");
-        require(allowedTokens[tokenAddress], "EscrowContract: token not allowed");
+        require(allowedTokens[address(0)], "EscrowContract: ETH not allowed");
+        require(msg.value > 0, "EscrowContract: ETH amount must be positive");
         
-        uint256 amount;
-        if (tokenAddress == address(0)) {
-            amount = msg.value;
-            require(amount > 0, "EscrowContract: ETH amount must be positive");
-        } else {
-            amount = msg.value; // For ERC20, amount should be passed differently
-            // This would need to be modified for ERC20 tokens
-        }
+        uint256 escrowId = nextEscrowId++;
+        
+        escrows[escrowId] = Escrow({
+            buyer: msg.sender,
+            seller: seller,
+            arbitrator: arbitrator,
+            amount: msg.value,
+            tokenAddress: address(0),
+            status: EscrowStatus.Active,
+            createdAt: block.timestamp,
+            completedAt: 0,
+            termsHash: termsHash,
+            evidenceHash: "",
+            disputeId: 0,
+            buyerConfirmed: false,
+            sellerConfirmed: false
+        });
+        
+        userEscrows[msg.sender].push(escrowId);
+        userEscrows[seller].push(escrowId);
+        
+        emit EscrowCreated(escrowId, msg.sender, seller, msg.value, address(0));
+        
+        return escrowId;
+    }
+    
+    /**
+     * @dev Create a new escrow with ERC20 token
+     * @param seller Address of the seller
+     * @param arbitrator Address of the arbitrator (can be zero for random selection)
+     * @param tokenAddress Address of the ERC20 token
+     * @param amount Amount of tokens to escrow
+     * @param termsHash IPFS hash of the terms
+     */
+    function createEscrowERC20(
+        address seller,
+        address arbitrator,
+        address tokenAddress,
+        uint256 amount,
+        string memory termsHash
+    ) external nonReentrant returns (uint256) {
+        require(seller != address(0), "EscrowContract: invalid seller");
+        require(seller != msg.sender, "EscrowContract: cannot escrow with self");
+        require(tokenAddress != address(0), "EscrowContract: invalid token address");
+        require(allowedTokens[tokenAddress], "EscrowContract: token not allowed");
+        require(amount > 0, "EscrowContract: amount must be positive");
+        
+        // Transfer tokens from buyer to contract
+        IERC20(tokenAddress).transferFrom(msg.sender, address(this), amount);
         
         uint256 escrowId = nextEscrowId++;
         
@@ -158,33 +198,62 @@ contract EscrowContract is ReentrancyGuard, Ownable {
         }
     }
     
+    // Address of DisputeContract (can be set by owner)
+    address public disputeContract;
+    
+    /**
+     * @dev Set the DisputeContract address
+     * @param _disputeContract Address of the DisputeContract
+     */
+    function setDisputeContract(address _disputeContract) external onlyOwner {
+        require(_disputeContract != address(0), "EscrowContract: invalid dispute contract");
+        disputeContract = _disputeContract;
+    }
+    
     /**
      * @dev Create a dispute for the escrow
      * @param escrowId ID of the escrow
      * @param evidenceHash IPFS hash of evidence
      */
-    function createDispute(uint256 escrowId, string memory evidenceHash) external nonReentrant {
+    function createDispute(uint256 escrowId, string memory evidenceHash) external nonReentrant returns (uint256) {
         Escrow storage escrow = escrows[escrowId];
         require(escrow.status == EscrowStatus.Active, "EscrowContract: escrow not active");
         require(
             msg.sender == escrow.buyer || msg.sender == escrow.seller,
             "EscrowContract: not authorized"
         );
+        require(disputeContract != address(0), "EscrowContract: dispute contract not set");
         
         escrow.status = EscrowStatus.Disputed;
         escrow.evidenceHash = evidenceHash;
         
-        // This would integrate with the DisputeContract
-        // For now, we'll emit an event
+        // Call DisputeContract to create dispute
+        // Note: DisputeContract.createDispute needs to be called separately
+        // This function just marks the escrow as disputed
         emit EscrowDisputed(escrowId, 0);
+        
+        return 0; // Return 0, actual dispute ID should be set via setDisputeId
     }
     
     /**
-     * @dev Complete escrow after dispute resolution
+     * @dev Set dispute ID for an escrow (called by DisputeContract)
+     * @param escrowId ID of the escrow
+     * @param disputeId ID of the dispute
+     */
+    function setDisputeId(uint256 escrowId, uint256 disputeId) external {
+        require(msg.sender == disputeContract, "EscrowContract: only dispute contract");
+        Escrow storage escrow = escrows[escrowId];
+        require(escrow.status == EscrowStatus.Disputed, "EscrowContract: escrow not disputed");
+        escrow.disputeId = disputeId;
+    }
+    
+    /**
+     * @dev Complete escrow after dispute resolution (called by DisputeContract)
      * @param escrowId ID of the escrow
      * @param winner Address of the winner
      */
-    function resolveDispute(uint256 escrowId, address winner) external onlyOwner {
+    function resolveDispute(uint256 escrowId, address winner) external {
+        require(msg.sender == disputeContract || msg.sender == owner(), "EscrowContract: not authorized");
         Escrow storage escrow = escrows[escrowId];
         require(escrow.status == EscrowStatus.Disputed, "EscrowContract: escrow not disputed");
         
@@ -209,11 +278,15 @@ contract EscrowContract is ReentrancyGuard, Ownable {
         // Transfer funds
         if (escrow.tokenAddress == address(0)) {
             payable(winner).transfer(payout);
-            payable(owner()).transfer(fee);
+            if (fee > 0) {
+                payable(owner()).transfer(fee);
+            }
         } else {
-            // Handle ERC20 transfer
-            IERC20(escrow.tokenAddress).transfer(winner, payout);
-            IERC20(escrow.tokenAddress).transfer(owner(), fee);
+            // Handle ERC20 transfer with safe transfer
+            require(IERC20(escrow.tokenAddress).transfer(winner, payout), "EscrowContract: ERC20 transfer failed");
+            if (fee > 0) {
+                require(IERC20(escrow.tokenAddress).transfer(owner(), fee), "EscrowContract: ERC20 fee transfer failed");
+            }
         }
         
         emit EscrowCompleted(escrowId, winner);
@@ -237,7 +310,7 @@ contract EscrowContract is ReentrancyGuard, Ownable {
         if (escrow.tokenAddress == address(0)) {
             payable(escrow.buyer).transfer(escrow.amount);
         } else {
-            IERC20(escrow.tokenAddress).transfer(escrow.buyer, escrow.amount);
+            require(IERC20(escrow.tokenAddress).transfer(escrow.buyer, escrow.amount), "EscrowContract: ERC20 refund failed");
         }
         
         emit EscrowCancelled(escrowId);

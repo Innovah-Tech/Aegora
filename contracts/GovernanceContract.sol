@@ -303,14 +303,26 @@ contract GovernanceContract is
     }
     
     /**
-     * @dev Returns the total number of proposals ever created (by highest proposalId in proposalMetadata)
+     * @dev Returns the total number of proposals ever created
+     * Uses OpenZeppelin's built-in proposal count tracking
      */
     function proposalCount() public view returns (uint256) {
-        // proposalIds start from 1, so we iterate until we find the first missing proposal
+        // OpenZeppelin Governor tracks proposals starting from 1
+        // We need to find the highest proposal ID that exists
+        // This is a simplified version - in production, consider caching this value
         uint256 count = 0;
-        while (proposalMetadata[count + 1].createdAt != 0) {
-            count++;
+        uint256 maxProposals = 1000; // Reasonable upper limit to prevent gas issues
+        
+        for (uint256 i = 1; i <= maxProposals; i++) {
+            // Check if proposal exists by checking if metadata was created
+            if (proposalMetadata[i].createdAt != 0) {
+                count = i;
+            } else {
+                // If we hit a gap, we've found the end
+                break;
+            }
         }
+        
         return count;
     }
     

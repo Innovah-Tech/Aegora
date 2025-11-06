@@ -8,6 +8,21 @@ require('dotenv').config();
 
 const db = require('./db');
 const logger = require('./utils/logger');
+const { validateEnvironment } = require('./config/env');
+
+// Validate environment variables before starting
+const envValidation = validateEnvironment();
+if (!envValidation.valid) {
+  logger.error('Environment validation failed:');
+  envValidation.errors.forEach(error => logger.error(`  - ${error}`));
+  process.exit(1);
+}
+
+// Log warnings
+if (envValidation.warnings.length > 0) {
+  logger.warn('Environment validation warnings:');
+  envValidation.warnings.forEach(warning => logger.warn(`  - ${warning}`));
+}
 
 // Import routes
 const disputeRoutes = require('./routes/disputes');
