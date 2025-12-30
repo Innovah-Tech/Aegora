@@ -65,9 +65,60 @@ export function useCreateEscrowETH() {
       showToast.success(`Transaction submitted! Hash: ${tx.hash.slice(0, 10)}...`);
       
       const receipt = await tx.wait();
-      showToast.success('Escrow created successfully!');
       
-      return receipt;
+      // Extract escrow ID from EscrowCreated event
+      const event = receipt.events?.find(e => e.event === 'EscrowCreated');
+      if (!event) {
+        throw new Error('EscrowCreated event not found in transaction receipt');
+      }
+      
+      const escrowId = event.args.escrowId.toString();
+      const buyer = event.args.buyer;
+      const seller = event.args.seller;
+      const amount = event.args.amount.toString();
+      const tokenAddress = event.args.tokenAddress;
+      
+      // Sync with backend
+      try {
+        const syncResponse = await fetch(`${config.apiUrl}/api/escrow`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            buyer: buyer,
+            seller: seller,
+            arbitrator: arbitratorAddress || null,
+            amount: ethers.utils.formatEther(amount),
+            tokenAddress: tokenAddress === ethers.constants.AddressZero ? null : tokenAddress,
+            termsHash: termsHash,
+            onChainEscrowId: escrowId,
+            transactionHash: receipt.transactionHash,
+            blockNumber: receipt.blockNumber
+          })
+        });
+
+        const syncData = await syncResponse.json();
+        
+        if (!syncData.success) {
+          console.warn('Failed to sync escrow with backend:', syncData.message);
+          showToast.error('Escrow created on-chain but failed to sync with backend');
+        } else {
+          showToast.success('Escrow created and synced successfully!');
+        }
+      } catch (syncError) {
+        console.error('Error syncing escrow with backend:', syncError);
+        showToast.error('Escrow created on-chain but failed to sync with backend');
+      }
+      
+      return {
+        receipt,
+        escrowId,
+        buyer,
+        seller,
+        amount,
+        tokenAddress
+      };
     } catch (error) {
       console.error('Error creating escrow:', error);
       showToast.error('Failed to create escrow', error);
