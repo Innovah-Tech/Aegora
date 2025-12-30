@@ -73,7 +73,12 @@ const escrowSchemas = {
       .pattern(/^0x[a-fA-F0-9]{40}$/)
       .allow(null, '')
       .optional(),
-    termsHash: schemas.ipfsHash
+    termsHash: schemas.ipfsHash,
+    onChainEscrowId: Joi.number().integer().positive().optional(),
+    transactionHash: Joi.string()
+      .pattern(/^0x[a-fA-F0-9]{64}$/)
+      .optional(),
+    blockNumber: Joi.number().integer().positive().optional()
   }),
 
   confirm: Joi.object({
