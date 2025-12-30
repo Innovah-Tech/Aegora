@@ -104,9 +104,16 @@ const escrowSchemas = {
 const disputeSchemas = {
   create: Joi.object({
     escrowId: schemas.positiveInteger,
-    userAddress: schemas.ethereumAddress,
+    buyer: schemas.ethereumAddress,
+    seller: schemas.ethereumAddress,
     evidenceHash: schemas.ipfsHash,
-    evidenceDescription: Joi.string().max(1000).optional()
+    evidenceDescription: Joi.string().max(1000).optional(),
+    onChainDisputeId: Joi.number().integer().positive().optional(),
+    transactionHash: Joi.string()
+      .pattern(/^0x[a-fA-F0-9]{64}$/)
+      .optional(),
+    blockNumber: Joi.number().integer().positive().optional(),
+    createdBy: schemas.ethereumAddress.optional()
   }),
 
   vote: Joi.object({

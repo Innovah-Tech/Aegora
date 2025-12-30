@@ -172,6 +172,17 @@ contract DisputeContract is ReentrancyGuard, Ownable {
         
         emit DisputeCreated(disputeId, escrowId);
         
+        // Notify EscrowContract about the dispute ID (if escrowContract is set)
+        if (escrowContract != address(0)) {
+            (bool success, ) = escrowContract.call(
+                abi.encodeWithSignature("setDisputeId(uint256,uint256)", escrowId, disputeId)
+            );
+            // Don't fail if this call fails, dispute is already created
+            if (!success) {
+                // Log but continue - dispute is created successfully
+            }
+        }
+        
         return disputeId;
     }
     

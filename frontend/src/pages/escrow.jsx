@@ -18,7 +18,7 @@ import { StatsSkeleton, EscrowCardSkeleton } from '../components/Skeleton';
 import { IPFSUpload } from '../components/IPFSUpload';
 import config from '../config/env';
 import { showToast } from '../utils/toast';
-import { useCreateEscrowETH } from '../utils/contracts';
+import { useCreateEscrowETH, useCreateDispute } from '../utils/contracts';
 import { isValidIPFSHash } from '../utils/ipfs';
 
 export default function EscrowPage() {
@@ -32,6 +32,7 @@ export default function EscrowPage() {
   const [termsHash, setTermsHash] = useState('');
   
   const { createEscrow, isLoading: isCreatingEscrow } = useCreateEscrowETH();
+  const { createDispute, isLoading: isCreatingDispute } = useCreateDispute();
 
   useEffect(() => {
     fetchEscrows();
@@ -104,6 +105,11 @@ export default function EscrowPage() {
   };
 
   const handleDisputeEscrow = async (escrowId) => {
+    if (!isConnected) {
+      showToast.error('Please connect your wallet first');
+      return;
+    }
+
     const evidenceHash = prompt('Enter IPFS hash of evidence (or upload file first):');
     if (!evidenceHash || !isValidIPFSHash(evidenceHash)) {
       showToast.error('Please provide a valid IPFS hash');
@@ -111,26 +117,13 @@ export default function EscrowPage() {
     }
 
     try {
-      const response = await fetch(`${config.apiUrl}/api/escrow/${escrowId}/dispute`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userAddress: address,
-          evidenceHash,
-          evidenceDescription: 'Dispute evidence'
-        })
-      });
+      showToast.loading('Creating dispute...');
       
-      const data = await response.json();
+      // Create dispute on-chain
+      await createDispute(escrowId, evidenceHash);
       
-      if (data.success) {
-        showToast.success('Dispute created successfully!');
-        fetchEscrows();
-      } else {
-        showToast.error(data.message || 'Error creating dispute');
-      }
+      showToast.success('Dispute created successfully!');
+      fetchEscrows();
     } catch (error) {
       console.error('Error creating dispute:', error);
       showToast.error('Failed to create dispute', error);

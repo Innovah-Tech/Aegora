@@ -3,8 +3,10 @@ const router = express.Router();
 const Dispute = require('../db/models/Dispute');
 const User = require('../db/models/User');
 const Reputation = require('../db/models/Reputation');
+const Escrow = require('../db/models/Escrow');
 // const ipfsService = require('../services/ipfsService'); // Temporarily disabled
 const logger = require('../utils/logger');
+const { validate, disputeSchemas } = require('../middleware/validation');
 
 // Get all disputes
 router.get('/', async (req, res) => {
@@ -74,21 +76,54 @@ router.get('/:id', async (req, res) => {
 });
 
 // Create new dispute
-router.post('/', async (req, res) => {
+router.post('/', validate(disputeSchemas.create), async (req, res) => {
   try {
-    const { escrowId, buyer, seller, evidenceHash, evidenceDescription, files } = req.query;
+    const { escrowId, buyer, seller, evidenceHash, evidenceDescription, onChainDisputeId, transactionHash, blockNumber, createdBy } = req.body;
     
-    // Validate required fields
-    if (!escrowId || !buyer || !seller || !evidenceHash) {
-      return res.status(400).json({
+    // Verify escrow exists
+    const escrow = await Escrow.findOne({ escrowId: parseInt(escrowId) });
+    if (!escrow) {
+      return res.status(404).json({
         success: false,
-        message: 'Missing required fields'
+        message: 'Escrow not found'
       });
     }
     
-    // Get next dispute ID
-    const lastDispute = await Dispute.findOne().sort({ disputeId: -1 });
-    const disputeId = lastDispute ? lastDispute.disputeId + 1 : 1;
+    // Verify escrow is active
+    if (escrow.status !== 'Active') {
+      return res.status(400).json({
+        success: false,
+        message: 'Escrow is not active'
+      });
+    }
+    
+    // Verify buyer and seller match escrow
+    if (buyer.toLowerCase() !== escrow.buyer.toLowerCase() || seller.toLowerCase() !== escrow.seller.toLowerCase()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Buyer and seller do not match escrow'
+      });
+    }
+    
+    // Use on-chain dispute ID if provided, otherwise generate new one
+    let disputeId;
+    if (onChainDisputeId) {
+      // Check if dispute with this ID already exists
+      const existingDispute = await Dispute.findOne({ disputeId: onChainDisputeId });
+      if (existingDispute) {
+        logger.warn(`Dispute ${onChainDisputeId} already exists in database`);
+        return res.status(200).json({
+          success: true,
+          data: existingDispute,
+          message: 'Dispute already synced'
+        });
+      }
+      disputeId = onChainDisputeId;
+    } else {
+      // Get next dispute ID for off-chain disputes
+      const lastDispute = await Dispute.findOne().sort({ disputeId: -1 });
+      disputeId = lastDispute ? lastDispute.disputeId + 1 : 1;
+    }
     
     // Create dispute
     const dispute = new Dispute({
@@ -99,33 +134,60 @@ router.post('/', async (req, res) => {
       evidence: {
         hash: evidenceHash,
         description: evidenceDescription || '',
-        files: files || []
+        files: []
       },
+      status: onChainDisputeId ? 'InProgress' : 'Pending', // On-chain disputes are immediately InProgress
       timeline: [{
         action: 'Dispute Created',
-        actor: buyer.toLowerCase(),
-        details: 'Dispute initiated',
+        actor: (createdBy || buyer).toLowerCase(),
+        details: onChainDisputeId 
+          ? `Dispute created on-chain (ID: ${onChainDisputeId}, TX: ${transactionHash?.slice(0, 10)}...)`
+          : 'Dispute initiated',
         timestamp: new Date()
       }]
     });
     
+    // Store on-chain metadata if available
+    if (transactionHash) {
+      dispute.transactionHash = transactionHash;
+    }
+    if (blockNumber) {
+      dispute.blockNumber = blockNumber;
+    }
+    
     await dispute.save();
+    
+    // Update escrow status to Disputed
+    escrow.status = 'Disputed';
+    escrow.evidenceHash = evidenceHash;
+    escrow.disputeId = disputeId;
+    await escrow.addTimelineEvent('Dispute Created', (createdBy || buyer).toLowerCase(), `Dispute ${disputeId} created`);
+    await escrow.save();
     
     // Update user reputations
     await Promise.all([
-      User.findByAddress(buyer).then(user => user && user.addDisputeParticipation(false)),
-      User.findByAddress(seller).then(user => user && user.addDisputeParticipation(false))
+      User.findByAddress && User.findByAddress(buyer).then(user => user && user.addDisputeParticipation && user.addDisputeParticipation(false)),
+      User.findByAddress && User.findByAddress(seller).then(user => user && user.addDisputeParticipation && user.addDisputeParticipation(false))
     ]);
     
-    logger.info(`Dispute ${disputeId} created for escrow ${escrowId}`);
+    logger.info(`Dispute ${disputeId} ${onChainDisputeId ? 'synced from on-chain' : 'created'} for escrow ${escrowId}`);
     
     res.status(201).json({
       success: true,
       data: dispute,
-      message: 'Dispute created successfully'
+      message: onChainDisputeId ? 'Dispute synced successfully' : 'Dispute created successfully'
     });
   } catch (error) {
     logger.error('Error creating dispute:', error);
+    
+    // Handle duplicate key error
+    if (error.code === 11000 || error.message.includes('duplicate')) {
+      return res.status(409).json({
+        success: false,
+        message: 'Dispute with this ID already exists'
+      });
+    }
+    
     res.status(500).json({
       success: false,
       message: 'Failed to create dispute'

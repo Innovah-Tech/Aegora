@@ -26,6 +26,7 @@ const DISPUTE_ABI = [
   'function registerJuror(uint256 stake) external',
   'function unregisterJuror() external',
   'function getDispute(uint256 disputeId) external view returns (uint256, address, address, address[], uint8, uint256, uint256, string, uint256, uint256)',
+  'event DisputeCreated(uint256 indexed disputeId, uint256 indexed escrowId)',
 ];
 
 /**
@@ -400,6 +401,147 @@ export function useRegisterJuror() {
   };
 
   return { registerJuror, isLoading };
+}
+
+/**
+ * Hook for creating a dispute for an escrow
+ */
+export function useCreateDispute() {
+  const { address } = useAccount();
+  const { data: signer } = useSigner();
+  const [isLoading, setIsLoading] = useState(false);
+
+  const createDispute = async (escrowId, evidenceHash) => {
+    if (!address || !signer) {
+      showToast.error('Please connect your wallet first');
+      return;
+    }
+
+    if (!config.contracts.escrowContract) {
+      showToast.error('Escrow contract address not configured');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      // First, get escrow details to verify and get buyer/seller
+      const escrowContract = new ethers.Contract(
+        config.contracts.escrowContract,
+        ESCROW_ABI,
+        signer
+      );
+
+      const escrowData = await escrowContract.getEscrow(escrowId);
+      
+      // Verify user is buyer or seller
+      const userAddr = address.toLowerCase();
+      const buyerAddr = escrowData.buyer.toLowerCase();
+      const sellerAddr = escrowData.seller.toLowerCase();
+      
+      if (userAddr !== buyerAddr && userAddr !== sellerAddr) {
+        throw new Error('Only buyer or seller can create a dispute');
+      }
+
+      // Create dispute via EscrowContract (which will call DisputeContract)
+      const tx = await escrowContract.createDispute(escrowId, evidenceHash);
+      
+      showToast.success(`Transaction submitted! Hash: ${tx.hash.slice(0, 10)}...`);
+      
+      const receipt = await tx.wait();
+      
+      // Extract dispute ID from EscrowDisputed event
+      let disputeId = null;
+      let event = null;
+      
+      if (receipt.events && receipt.events.length > 0) {
+        event = receipt.events.find(e => e.event === 'EscrowDisputed');
+      }
+      
+      // If not found in events, parse from logs
+      if (!event && receipt.logs && receipt.logs.length > 0) {
+        const iface = new ethers.utils.Interface(ESCROW_ABI);
+        for (const log of receipt.logs) {
+          try {
+            const parsed = iface.parseLog(log);
+            if (parsed && parsed.name === 'EscrowDisputed') {
+              event = { args: parsed.args };
+              break;
+            }
+          } catch (e) {
+            // Not this log, continue
+          }
+        }
+      }
+      
+      if (event) {
+        disputeId = event.args.disputeId.toString();
+      }
+
+      // Also try to get dispute ID from DisputeCreated event if available
+      if (!disputeId && config.contracts.disputeContract) {
+        const disputeIface = new ethers.utils.Interface(DISPUTE_ABI);
+        for (const log of receipt.logs) {
+          try {
+            const parsed = disputeIface.parseLog(log);
+            if (parsed && parsed.name === 'DisputeCreated') {
+              disputeId = parsed.args.disputeId.toString();
+              break;
+            }
+          } catch (e) {
+            // Not this log, continue
+          }
+        }
+      }
+
+      // Sync with backend
+      try {
+        const syncResponse = await fetch(`${config.apiUrl}/api/disputes`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            escrowId: escrowId.toString(),
+            buyer: escrowData.buyer,
+            seller: escrowData.seller,
+            evidenceHash: evidenceHash,
+            onChainDisputeId: disputeId,
+            transactionHash: receipt.transactionHash,
+            blockNumber: receipt.blockNumber,
+            createdBy: address
+          })
+        });
+
+        const syncData = await syncResponse.json();
+        
+        if (!syncData.success) {
+          console.warn('Failed to sync dispute with backend:', syncData.message);
+          showToast.error('Dispute created on-chain but failed to sync with backend');
+        } else {
+          showToast.success('Dispute created and synced successfully!');
+        }
+      } catch (syncError) {
+        console.error('Error syncing dispute with backend:', syncError);
+        showToast.error('Dispute created on-chain but failed to sync with backend');
+      }
+      
+      return {
+        receipt,
+        disputeId,
+        escrowId: escrowId.toString(),
+        buyer: escrowData.buyer,
+        seller: escrowData.seller
+      };
+    } catch (error) {
+      console.error('Error creating dispute:', error);
+      showToast.error('Failed to create dispute', error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return { createDispute, isLoading };
 }
 
 /**

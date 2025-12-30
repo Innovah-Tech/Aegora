@@ -54,6 +54,10 @@ const escrowSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  disputeId: {
+    type: Number,
+    default: null
+  },
   completedAt: {
     type: Date,
     default: null

@@ -96,6 +96,14 @@ const disputeSchema = new mongoose.Schema({
     },
     details: String
   }],
+  transactionHash: {
+    type: String,
+    default: null
+  },
+  blockNumber: {
+    type: Number,
+    default: null
+  },
   createdAt: {
     type: Date,
     default: Date.now
@@ -112,6 +120,7 @@ disputeSchema.index({ escrowId: 1 });
 disputeSchema.index({ buyer: 1 });
 disputeSchema.index({ seller: 1 });
 disputeSchema.index({ status: 1 });
+disputeSchema.index({ transactionHash: 1 });
 disputeSchema.index({ createdAt: -1 });
 
 // Middleware

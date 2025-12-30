@@ -210,6 +210,11 @@ contract EscrowContract is ReentrancyGuard, Ownable {
         disputeContract = _disputeContract;
     }
     
+    // Interface for DisputeContract
+    interface IDisputeContract {
+        function createDispute(uint256 escrowId, address buyer, address seller, string memory evidenceHash) external returns (uint256);
+    }
+    
     /**
      * @dev Create a dispute for the escrow
      * @param escrowId ID of the escrow
@@ -224,15 +229,20 @@ contract EscrowContract is ReentrancyGuard, Ownable {
         );
         require(disputeContract != address(0), "EscrowContract: dispute contract not set");
         
+        // Mark escrow as disputed first
         escrow.status = EscrowStatus.Disputed;
         escrow.evidenceHash = evidenceHash;
         
         // Call DisputeContract to create dispute
-        // Note: DisputeContract.createDispute needs to be called separately
-        // This function just marks the escrow as disputed
-        emit EscrowDisputed(escrowId, 0);
+        IDisputeContract dispute = IDisputeContract(disputeContract);
+        uint256 disputeId = dispute.createDispute(escrowId, escrow.buyer, escrow.seller, evidenceHash);
         
-        return 0; // Return 0, actual dispute ID should be set via setDisputeId
+        // Store the dispute ID
+        escrow.disputeId = disputeId;
+        
+        emit EscrowDisputed(escrowId, disputeId);
+        
+        return disputeId;
     }
     
     /**

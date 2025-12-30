@@ -22,7 +22,8 @@ import {
 } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import { showToast } from '../utils/toast';
-import { useConfirmEscrow } from '../utils/contracts';
+import { useConfirmEscrow, useCreateDispute } from '../utils/contracts';
+import { isValidIPFSHash } from '../utils/ipfs';
 import config from '../config/env';
 import { CopyToClipboard } from 'react-copy-to-clipboard';
 import { formatDistanceToNow } from 'date-fns';
@@ -35,6 +36,7 @@ export default function EscrowDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const { confirmEscrow, isLoading: isConfirming } = useConfirmEscrow();
+  const { createDispute, isLoading: isCreatingDispute } = useCreateDispute();
 
   useEffect(() => {
     if (id) {
@@ -76,8 +78,30 @@ export default function EscrowDetailPage() {
     }
   };
 
-  const handleDispute = () => {
-    router.push(`/disputes?escrow=${id}`);
+  const handleDispute = async () => {
+    if (!isConnected) {
+      showToast.error('Please connect your wallet first');
+      return;
+    }
+
+    const evidenceHash = prompt('Enter IPFS hash of evidence (or upload file first):');
+    if (!evidenceHash || !isValidIPFSHash(evidenceHash)) {
+      showToast.error('Please provide a valid IPFS hash');
+      return;
+    }
+
+    try {
+      showToast.loading('Creating dispute...');
+      
+      // Create dispute on-chain
+      await createDispute(id, evidenceHash);
+      
+      showToast.success('Dispute created successfully!');
+      fetchEscrowDetails(); // Refresh
+    } catch (error) {
+      console.error('Error creating dispute:', error);
+      showToast.error('Failed to create dispute', error);
+    }
   };
 
   const formatAddress = (addr) => {
