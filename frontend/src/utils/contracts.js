@@ -67,7 +67,28 @@ export function useCreateEscrowETH() {
       const receipt = await tx.wait();
       
       // Extract escrow ID from EscrowCreated event
-      const event = receipt.events?.find(e => e.event === 'EscrowCreated');
+      // In ethers v5, events can be in receipt.events or we need to parse logs
+      let event = null;
+      if (receipt.events && receipt.events.length > 0) {
+        event = receipt.events.find(e => e.event === 'EscrowCreated');
+      }
+      
+      // If not found in events, parse from logs
+      if (!event && receipt.logs && receipt.logs.length > 0) {
+        const iface = new ethers.utils.Interface(ESCROW_ABI);
+        for (const log of receipt.logs) {
+          try {
+            const parsed = iface.parseLog(log);
+            if (parsed && parsed.name === 'EscrowCreated') {
+              event = { args: parsed.args };
+              break;
+            }
+          } catch (e) {
+            // Not this log, continue
+          }
+        }
+      }
+      
       if (!event) {
         throw new Error('EscrowCreated event not found in transaction receipt');
       }
@@ -188,7 +209,28 @@ export function useCreateEscrowERC20() {
       const receipt = await tx.wait();
       
       // Extract escrow ID from EscrowCreated event
-      const event = receipt.events?.find(e => e.event === 'EscrowCreated');
+      // In ethers v5, events can be in receipt.events or we need to parse logs
+      let event = null;
+      if (receipt.events && receipt.events.length > 0) {
+        event = receipt.events.find(e => e.event === 'EscrowCreated');
+      }
+      
+      // If not found in events, parse from logs
+      if (!event && receipt.logs && receipt.logs.length > 0) {
+        const iface = new ethers.utils.Interface(ESCROW_ABI);
+        for (const log of receipt.logs) {
+          try {
+            const parsed = iface.parseLog(log);
+            if (parsed && parsed.name === 'EscrowCreated') {
+              event = { args: parsed.args };
+              break;
+            }
+          } catch (e) {
+            // Not this log, continue
+          }
+        }
+      }
+      
       if (!event) {
         throw new Error('EscrowCreated event not found in transaction receipt');
       }
