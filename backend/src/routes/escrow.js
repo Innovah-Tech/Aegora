@@ -89,7 +89,7 @@ router.get('/:id', async (req, res) => {
 // Create new escrow
 router.post('/', validate(escrowSchemas.create), async (req, res) => {
   try {
-    const { buyer, seller, arbitrator, amount, tokenAddress, termsHash } = req.body;
+    const { buyer, seller, arbitrator, amount, tokenAddress, termsHash, onChainEscrowId, transactionHash, blockNumber } = req.body;
     
     // Additional validation (buyer != seller) - Joi validation handles other checks
     if (buyer.toLowerCase() === seller.toLowerCase()) {
@@ -99,9 +99,25 @@ router.post('/', validate(escrowSchemas.create), async (req, res) => {
       });
     }
     
-    // Get next escrow ID
-    const lastEscrow = await Escrow.findOne().sort({ escrowId: -1 });
-    const escrowId = lastEscrow ? lastEscrow.escrowId + 1 : 1;
+    // Use on-chain escrow ID if provided, otherwise generate new one
+    let escrowId;
+    if (onChainEscrowId) {
+      // Check if escrow with this ID already exists
+      const existingEscrow = await Escrow.findOne({ escrowId: onChainEscrowId });
+      if (existingEscrow) {
+        logger.warn(`Escrow ${onChainEscrowId} already exists in database`);
+        return res.status(200).json({
+          success: true,
+          data: existingEscrow,
+          message: 'Escrow already synced'
+        });
+      }
+      escrowId = onChainEscrowId;
+    } else {
+      // Get next escrow ID for off-chain escrows
+      const lastEscrow = await Escrow.findOne().sort({ escrowId: -1 });
+      escrowId = lastEscrow ? lastEscrow.escrowId + 1 : 1;
+    }
     
     // Create escrow
     const escrow = new Escrow({
@@ -116,22 +132,41 @@ router.post('/', validate(escrowSchemas.create), async (req, res) => {
       timeline: [{
         action: 'Escrow Created',
         actor: buyer.toLowerCase(),
-        details: `Escrow created with ${amount} tokens`,
+        details: onChainEscrowId 
+          ? `Escrow created on-chain (ID: ${onChainEscrowId}, TX: ${transactionHash?.slice(0, 10)}...)`
+          : `Escrow created with ${amount} tokens`,
         timestamp: new Date()
       }]
     });
     
+    // Store on-chain metadata if available
+    if (transactionHash) {
+      escrow.transactionHash = transactionHash;
+    }
+    if (blockNumber) {
+      escrow.blockNumber = blockNumber;
+    }
+    
     await escrow.save();
     
-    logger.info(`Escrow ${escrowId} created between ${buyer} and ${seller}`);
+    logger.info(`Escrow ${escrowId} ${onChainEscrowId ? 'synced from on-chain' : 'created'} between ${buyer} and ${seller}`);
     
     res.status(201).json({
       success: true,
       data: escrow,
-      message: 'Escrow created successfully'
+      message: onChainEscrowId ? 'Escrow synced successfully' : 'Escrow created successfully'
     });
   } catch (error) {
     logger.error('Error creating escrow:', error);
+    
+    // Handle duplicate key error (if escrow ID already exists)
+    if (error.code === 11000 || error.message.includes('duplicate')) {
+      return res.status(409).json({
+        success: false,
+        message: 'Escrow with this ID already exists'
+      });
+    }
+    
     res.status(500).json({
       success: false,
       message: 'Failed to create escrow'

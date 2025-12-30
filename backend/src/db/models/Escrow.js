@@ -58,6 +58,14 @@ const escrowSchema = new mongoose.Schema({
     type: Date,
     default: null
   },
+  transactionHash: {
+    type: String,
+    default: null
+  },
+  blockNumber: {
+    type: Number,
+    default: null
+  },
   timeline: [{
     action: {
       type: String,
@@ -96,5 +104,6 @@ escrowSchema.index({ buyer: 1 });
 escrowSchema.index({ seller: 1 });
 escrowSchema.index({ status: 1 });
 escrowSchema.index({ createdAt: -1 });
+escrowSchema.index({ transactionHash: 1 });
 
 module.exports = mongoose.model('Escrow', escrowSchema);
