@@ -432,6 +432,7 @@ export default function DisputesPage() {
               </div>
             </motion.div>
           </div>
+          )}
 
           {/* Juror Stats */}
           {jurorStats && (

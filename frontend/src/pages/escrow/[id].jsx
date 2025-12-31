@@ -20,11 +20,11 @@ import {
   Check,
   X
 } from 'lucide-react';
-import Navbar from '../components/Navbar';
-import { showToast } from '../utils/toast';
-import { useConfirmEscrow, useCreateDispute } from '../utils/contracts';
-import { isValidIPFSHash } from '../utils/ipfs';
-import config from '../config/env';
+import Navbar from '../../components/Navbar';
+import { showToast } from '../../utils/toast';
+import { useConfirmEscrow, useCreateDispute } from '../../utils/contracts';
+import { isValidIPFSHash } from '../../utils/ipfs';
+import config from '../../config/env';
 import { CopyToClipboard } from 'react-copy-to-clipboard';
 import { formatDistanceToNow } from 'date-fns';
 

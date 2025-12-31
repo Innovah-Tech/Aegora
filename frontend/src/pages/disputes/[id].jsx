@@ -20,10 +20,10 @@ import {
   Eye,
   Shield
 } from 'lucide-react';
-import Navbar from '../components/Navbar';
-import CommitRevealVoting from '../components/CommitRevealVoting';
-import { showToast } from '../utils/toast';
-import config from '../config/env';
+import Navbar from '../../components/Navbar';
+import CommitRevealVoting from '../../components/CommitRevealVoting';
+import { showToast } from '../../utils/toast';
+import config from '../../config/env';
 import { CopyToClipboard } from 'react-copy-to-clipboard';
 import { formatDistanceToNow } from 'date-fns';
 
