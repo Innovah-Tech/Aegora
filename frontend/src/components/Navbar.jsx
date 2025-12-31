@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { useRouter } from 'next/router';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { useAccount, usePublicClient } from 'wagmi';
@@ -12,6 +11,7 @@ import { fetchErc20Balance } from '../utils/ethers';
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [logoError, setLogoError] = useState(false);
   const router = useRouter();
   const { address } = useAccount();
   const publicClient = usePublicClient();
@@ -49,15 +49,21 @@ const Navbar = () => {
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <div className="flex items-center">
-            <Link href="/" className="flex items-center space-x-2">
-              <Image
-                src="/images/logo.png"
-                alt="Aegora Logo"
-                width={32}
-                height={32}
-                className="rounded"
-                priority
-              />
+            <Link href="/" className="flex items-center space-x-2 hover:opacity-80 transition-opacity">
+              {logoError ? (
+                <div className="w-8 h-8 rounded bg-blue-600 flex items-center justify-center flex-shrink-0">
+                  <span className="text-white font-bold text-sm">A</span>
+                </div>
+              ) : (
+                <img
+                  src="/images/logo.png"
+                  alt="Aegora Logo"
+                  width={32}
+                  height={32}
+                  className="w-8 h-8 rounded object-contain flex-shrink-0"
+                  onError={() => setLogoError(true)}
+                />
+              )}
               <span className="text-xl font-bold text-gray-900 dark:text-gray-100">Aegora</span>
             </Link>
           </div>
