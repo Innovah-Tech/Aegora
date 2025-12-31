@@ -11,7 +11,6 @@ import { fetchErc20Balance } from '../utils/ethers';
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [logoError, setLogoError] = useState(false);
   const router = useRouter();
   const { address } = useAccount();
   const publicClient = usePublicClient();
@@ -50,22 +49,14 @@ const Navbar = () => {
           {/* Logo */}
           <div className="flex items-center">
             <Link href="/" className="flex items-center space-x-2 hover:opacity-80 transition-opacity">
-              {logoError ? (
-                <div className="w-8 h-8 rounded bg-blue-600 flex items-center justify-center flex-shrink-0">
-                  <span className="text-white font-bold text-sm">A</span>
-                </div>
-              ) : (
-                <img
-                  src="/images/logo.png"
-                  alt="Aegora Logo"
-                  width={32}
-                  height={32}
-                  className="w-8 h-8 rounded object-contain flex-shrink-0"
-                  style={{ display: 'block' }}
-                  onError={() => setLogoError(true)}
-                  onLoad={() => setLogoError(false)}
-                />
-              )}
+              <img
+                src="/images/logo.svg"
+                alt="Aegora Logo"
+                width={32}
+                height={32}
+                className="w-8 h-8 rounded flex-shrink-0"
+                style={{ display: 'block' }}
+              />
               <span className="text-xl font-bold text-gray-900 dark:text-gray-100">Aegora</span>
             </Link>
           </div>
