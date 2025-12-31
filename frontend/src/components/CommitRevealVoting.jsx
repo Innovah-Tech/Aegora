@@ -1,14 +1,37 @@
 import { useState, useEffect } from 'react';
-import { useAccount, useSigner } from 'wagmi';
+import { useAccount, useWalletClient } from 'wagmi';
 import { ethers } from 'ethers';
 import { Lock, Unlock, Vote, AlertCircle, CheckCircle, Clock } from 'lucide-react';
 import { showToast } from '../utils/toast';
 import { generateVoteHash, generateNonce, DISPUTE_ABI } from '../utils/contracts';
 import config from '../config/env';
 
+/**
+ * Convert wallet client to ethers signer
+ */
+function walletClientToSigner(walletClient) {
+  if (!walletClient) return null;
+  
+  // For wagmi v2, we need to use window.ethereum or the wallet client's account
+  // Since wagmi v2 uses viem internally, we'll use window.ethereum if available
+  if (typeof window !== 'undefined' && window.ethereum) {
+    const { account, chain } = walletClient;
+    const network = {
+      chainId: chain.id,
+      name: chain.name,
+      ensAddress: chain.contracts?.ensRegistry?.address,
+    };
+    const provider = new ethers.providers.Web3Provider(window.ethereum, network);
+    const signer = provider.getSigner(account.address);
+    return signer;
+  }
+  
+  return null;
+}
+
 export function CommitRevealVoting({ dispute, onVoteComplete }) {
   const { address } = useAccount();
-  const { data: signer } = useSigner();
+  const { data: walletClient } = useWalletClient();
   const [phase, setPhase] = useState('commit'); // 'commit' or 'reveal'
   const [hasCommitted, setHasCommitted] = useState(false);
   const [vote, setVote] = useState(null); // 'buyer' or 'seller'
@@ -39,7 +62,10 @@ export function CommitRevealVoting({ dispute, onVoteComplete }) {
   const checkVotingPhase = async () => {
     // Check contract state to determine phase
     try {
-      if (!signer || !config.contracts.disputeContract) return;
+      if (!walletClient || !config.contracts.disputeContract) return;
+      
+      const signer = walletClientToSigner(walletClient);
+      if (!signer) return;
       
       const contract = new ethers.Contract(
         config.contracts.disputeContract,
@@ -57,13 +83,19 @@ export function CommitRevealVoting({ dispute, onVoteComplete }) {
   };
 
   const handleCommitVote = async (selectedVote) => {
-    if (!address || !signer) {
+    if (!address || !walletClient) {
       showToast.error('Please connect your wallet first');
       return;
     }
 
     if (!config.contracts.disputeContract) {
       showToast.error('Dispute contract address not configured');
+      return;
+    }
+
+    const signer = walletClientToSigner(walletClient);
+    if (!signer) {
+      showToast.error('Failed to get signer');
       return;
     }
 
@@ -106,13 +138,19 @@ export function CommitRevealVoting({ dispute, onVoteComplete }) {
   };
 
   const handleRevealVote = async () => {
-    if (!address || !signer) {
+    if (!address || !walletClient) {
       showToast.error('Please connect your wallet first');
       return;
     }
 
     if (!vote || !nonce) {
       showToast.error('Vote data not found. You must commit a vote first.');
+      return;
+    }
+
+    const signer = walletClientToSigner(walletClient);
+    if (!signer) {
+      showToast.error('Failed to get signer');
       return;
     }
 

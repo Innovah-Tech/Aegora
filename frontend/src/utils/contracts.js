@@ -1,9 +1,34 @@
 // Smart contract interaction utilities
 import { ethers } from 'ethers';
-import { useAccount, useSigner } from 'wagmi';
+import { useAccount, useWalletClient } from 'wagmi';
 import { useState } from 'react';
 import config from '../config/env';
 import { showToast } from './toast';
+
+/**
+ * Convert wallet client to ethers signer
+ * @param {Object} walletClient - Wallet client from wagmi
+ * @returns {ethers.Signer|null} - Ethers signer or null
+ */
+function walletClientToSigner(walletClient) {
+  if (!walletClient) return null;
+  
+  // For wagmi v2, we need to use window.ethereum or the wallet client's account
+  // Since wagmi v2 uses viem internally, we'll use window.ethereum if available
+  if (typeof window !== 'undefined' && window.ethereum) {
+    const { account, chain } = walletClient;
+    const network = {
+      chainId: chain.id,
+      name: chain.name,
+      ensAddress: chain.contracts?.ensRegistry?.address,
+    };
+    const provider = new ethers.providers.Web3Provider(window.ethereum, network);
+    const signer = provider.getSigner(account.address);
+    return signer;
+  }
+  
+  return null;
+}
 
 // EscrowContract ABI (minimal for interactions)
 const ESCROW_ABI = [
@@ -34,12 +59,18 @@ const DISPUTE_ABI = [
  */
 export function useCreateEscrowETH() {
   const { address } = useAccount();
-  const { data: signer } = useSigner();
+  const { data: walletClient } = useWalletClient();
   const [isLoading, setIsLoading] = useState(false);
   
   const createEscrow = async (sellerAddress, arbitratorAddress, termsHash, amountETH) => {
-    if (!address || !signer) {
+    if (!address || !walletClient) {
       showToast.error('Please connect your wallet first');
+      return;
+    }
+
+    const signer = walletClientToSigner(walletClient);
+    if (!signer) {
+      showToast.error('Failed to get signer');
       return;
     }
 
@@ -161,12 +192,18 @@ export function useCreateEscrowETH() {
  */
 export function useCreateEscrowERC20() {
   const { address } = useAccount();
-  const { data: signer } = useSigner();
+  const { data: walletClient } = useWalletClient();
   const [isLoading, setIsLoading] = useState(false);
 
   const createEscrow = async (sellerAddress, arbitratorAddress, tokenAddress, amount, termsHash) => {
-    if (!address || !signer) {
+    if (!address || !walletClient) {
       showToast.error('Please connect your wallet first');
+      return;
+    }
+
+    const signer = walletClientToSigner(walletClient);
+    if (!signer) {
+      showToast.error('Failed to get signer');
       return;
     }
 
@@ -304,12 +341,18 @@ export function useCreateEscrowERC20() {
  */
 export function useConfirmEscrow() {
   const { address } = useAccount();
-  const { data: signer } = useSigner();
+  const { data: walletClient } = useWalletClient();
   const [isLoading, setIsLoading] = useState(false);
 
   const confirmEscrow = async (escrowId) => {
-    if (!address || !signer) {
+    if (!address || !walletClient) {
       showToast.error('Please connect your wallet first');
+      return;
+    }
+
+    const signer = walletClientToSigner(walletClient);
+    if (!signer) {
+      showToast.error('Failed to get signer');
       return;
     }
 
@@ -345,17 +388,23 @@ export function useConfirmEscrow() {
  */
 export function useRegisterJuror() {
   const { address } = useAccount();
-  const { data: signer } = useSigner();
+  const { data: walletClient } = useWalletClient();
   const [isLoading, setIsLoading] = useState(false);
 
   const registerJuror = async (stakeAmount) => {
-    if (!address || !signer) {
+    if (!address || !walletClient) {
       showToast.error('Please connect your wallet first');
       return;
     }
 
     if (!config.contracts.disputeContract) {
       showToast.error('Dispute contract address not configured');
+      return;
+    }
+
+    const signer = walletClientToSigner(walletClient);
+    if (!signer) {
+      showToast.error('Failed to get signer');
       return;
     }
 
@@ -408,12 +457,18 @@ export function useRegisterJuror() {
  */
 export function useCreateDispute() {
   const { address } = useAccount();
-  const { data: signer } = useSigner();
+  const { data: walletClient } = useWalletClient();
   const [isLoading, setIsLoading] = useState(false);
 
   const createDispute = async (escrowId, evidenceHash) => {
-    if (!address || !signer) {
+    if (!address || !walletClient) {
       showToast.error('Please connect your wallet first');
+      return;
+    }
+
+    const signer = walletClientToSigner(walletClient);
+    if (!signer) {
+      showToast.error('Failed to get signer');
       return;
     }
 
