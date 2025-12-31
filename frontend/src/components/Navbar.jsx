@@ -61,7 +61,9 @@ const Navbar = () => {
                   width={32}
                   height={32}
                   className="w-8 h-8 rounded object-contain flex-shrink-0"
+                  style={{ display: 'block' }}
                   onError={() => setLogoError(true)}
+                  onLoad={() => setLogoError(false)}
                 />
               )}
               <span className="text-xl font-bold text-gray-900 dark:text-gray-100">Aegora</span>
