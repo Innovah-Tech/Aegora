@@ -201,15 +201,15 @@ export default function EscrowPage() {
         
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {errorMsg && (
-            <div className="mb-6 rounded-md border border-red-200 bg-red-50 p-4 text-red-800">
+            <div className="mb-6 rounded-md border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-900/20 p-4 text-red-800 dark:text-red-400">
               {errorMsg}
             </div>
           )}
           {/* Header */}
           <div className="flex items-center justify-between mb-8">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Escrow</h1>
-              <p className="text-gray-600 mt-2">Manage your secure transactions</p>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Escrow</h1>
+              <p className="text-gray-600 dark:text-gray-400 mt-2">Manage your secure transactions</p>
             </div>
             <button
               onClick={() => setShowCreateModal(true)}
@@ -228,13 +228,13 @@ export default function EscrowPage() {
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-white p-6 rounded-lg shadow-sm"
+              className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700"
             >
               <div className="flex items-center">
-                <Shield className="w-8 h-8 text-blue-600" />
+                <Shield className="w-8 h-8 text-blue-600 dark:text-blue-400" />
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Total</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.total}</p>
                 </div>
               </div>
             </motion.div>
@@ -243,13 +243,13 @@ export default function EscrowPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
-              className="bg-white p-6 rounded-lg shadow-sm"
+              className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700"
             >
               <div className="flex items-center">
-                <Clock className="w-8 h-8 text-green-600" />
+                <Clock className="w-8 h-8 text-green-600 dark:text-green-400" />
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Active</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.active}</p>
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Active</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.active}</p>
                 </div>
               </div>
             </motion.div>
@@ -258,13 +258,13 @@ export default function EscrowPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="bg-white p-6 rounded-lg shadow-sm"
+              className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700"
             >
               <div className="flex items-center">
-                <DollarSign className="w-8 h-8 text-purple-600" />
+                <DollarSign className="w-8 h-8 text-purple-600 dark:text-purple-400" />
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Completed</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.completed}</p>
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Completed</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.completed}</p>
                 </div>
               </div>
             </motion.div>
@@ -273,13 +273,13 @@ export default function EscrowPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
-              className="bg-white p-6 rounded-lg shadow-sm"
+              className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700"
             >
               <div className="flex items-center">
-                <Users className="w-8 h-8 text-red-600" />
+                <Users className="w-8 h-8 text-red-600 dark:text-red-400" />
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Disputed</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.disputed}</p>
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Disputed</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.disputed}</p>
                 </div>
               </div>
             </motion.div>
