@@ -40,19 +40,38 @@ app.use(helmet());
 // CORS whitelist: support comma-separated FRONTEND_CORS or single FRONTEND_URL
 const rawCors = process.env.FRONTEND_CORS || process.env.FRONTEND_URL || 'http://localhost:3000,http://localhost:3002';
 const allowedOrigins = rawCors.split(',').map(s => s.trim()).filter(Boolean);
+
+// Add Vercel deployment pattern matching
+const vercelPattern = /^https:\/\/.*\.vercel\.app$/;
+const isVercelOrigin = (origin) => vercelPattern.test(origin);
+
 logger.info(`CORS allowed origins: ${allowedOrigins.join(', ')}`);
+if (process.env.NODE_ENV === 'production') {
+  logger.info('CORS: Vercel deployments (*.vercel.app) are allowed');
+}
 
 app.use(cors({
   origin: function (origin, callback) {
     // Allow requests with no origin (e.g., curl, server-to-server)
     if (!origin) return callback(null, true);
+    
+    // Check explicit allowlist
     if (allowedOrigins.indexOf(origin) !== -1) {
       return callback(null, true);
     }
+    
+    // Allow Vercel deployments in production
+    if (process.env.NODE_ENV === 'production' && isVercelOrigin(origin)) {
+      return callback(null, true);
+    }
+    
     const msg = `The CORS policy for this site does not allow access from the specified Origin: ${origin}`;
+    logger.warn(`CORS blocked: ${origin}`);
     return callback(new Error(msg), false);
   },
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 
 // Rate limiting
