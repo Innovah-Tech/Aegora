@@ -6,7 +6,8 @@
 const requiredEnvVars = {
   // Production required vars
   production: [
-    'MONGODB_URI',
+    // MONGODB_URI is optional - app can run in mock mode
+    // 'MONGODB_URI',
     'NODE_ENV'
   ],
   // Development required vars
@@ -18,13 +19,14 @@ const requiredEnvVars = {
 const optionalEnvVars = {
   // Backend optional vars
   PORT: '3001',
+  MONGODB_URI: null, // Optional - app can run in mock mode
   IPFS_URL: 'http://localhost:5001',
   IPFS_GATEWAY: 'https://ipfs.io/ipfs/',
   IPFS_ENABLED: 'false',
   FRONTEND_URL: 'http://localhost:3000',
   FRONTEND_CORS: '',
   U2U_RPC_URL: 'https://rpc.u2u.xyz',
-  JWT_SECRET: null // Will warn if not set
+  JWT_SECRET: null // Will be auto-generated if not set
 };
 
 function validateEnvironment() {
@@ -45,17 +47,25 @@ function validateEnvironment() {
     if (!process.env[varName] && defaultValue !== null) {
       process.env[varName] = defaultValue;
     } else if (!process.env[varName] && defaultValue === null) {
-      warnings.push(`Optional environment variable ${varName} is not set (may cause issues)`);
+      // Special handling for MONGODB_URI - app can run in mock mode
+      if (varName === 'MONGODB_URI') {
+        warnings.push('MONGODB_URI is not set - app will run in mock mode (no database persistence)');
+      } else if (varName !== 'JWT_SECRET') { // JWT_SECRET handled separately
+        warnings.push(`Optional environment variable ${varName} is not set (may cause issues)`);
+      }
     }
   }
 
   // Special validation for JWT_SECRET
-  if (env === 'production' && !process.env.JWT_SECRET) {
-    errors.push('JWT_SECRET is required in production environment');
-  } else if (env !== 'production' && !process.env.JWT_SECRET) {
+  // Auto-generate if not set (with warning in production)
+  if (!process.env.JWT_SECRET) {
     const crypto = require('crypto');
     process.env.JWT_SECRET = crypto.randomBytes(32).toString('hex');
-    warnings.push('JWT_SECRET was auto-generated for development');
+    if (env === 'production') {
+      warnings.push('⚠️  SECURITY WARNING: JWT_SECRET was auto-generated. Set JWT_SECRET environment variable for production use!');
+    } else {
+      warnings.push('JWT_SECRET was auto-generated for development');
+    }
   }
 
   // Validate MongoDB URI format
