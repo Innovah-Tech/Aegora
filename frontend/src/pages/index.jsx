@@ -122,17 +122,17 @@ export default function Home() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8 }}
               >
-                <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6">
+                <h1 className="text-4xl md:text-6xl font-bold text-gray-900 dark:text-gray-100 mb-6">
                   Trust Without
-                  <span className="text-blue-600"> Centralization</span>
+                  <span className="text-blue-600 dark:text-blue-400"> Centralization</span>
                 </h1>
-                <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
+                <p className="text-xl text-gray-600 dark:text-gray-300 mb-8 max-w-3xl mx-auto">
                   Aegora introduces a trustless dispute resolution system where escrow, 
                   arbitration, and reputation are handled entirely on-chain, governed by a DAO.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
                   <ConnectButton />
-                  <button className="px-8 py-3 bg-white text-gray-900 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors">
+                  <button className="px-8 py-3 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-lg border border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                     Learn More
                   </button>
                 </div>
@@ -142,10 +142,10 @@ export default function Home() {
         </section>
 
         {/* Stats Section */}
-        <section className="py-16 bg-white">
+        <section className="py-16 bg-white dark:bg-gray-900">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             {errorMsg && (
-              <div className="mb-6 p-4 rounded-lg border border-red-200 bg-red-50 text-red-700">
+              <div className="mb-6 p-4 rounded-lg border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400">
                 {errorMsg}
               </div>
             )}
@@ -156,8 +156,8 @@ export default function Home() {
                 transition={{ duration: 0.8, delay: 0.1 }}
                 className="text-center"
               >
-                <div className="text-3xl font-bold text-blue-600">{stats.totalEscrows}</div>
-                <div className="text-gray-600">Total Escrows</div>
+                <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">{stats.totalEscrows}</div>
+                <div className="text-gray-600 dark:text-gray-400">Total Escrows</div>
               </motion.div>
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -165,8 +165,8 @@ export default function Home() {
                 transition={{ duration: 0.8, delay: 0.2 }}
                 className="text-center"
               >
-                <div className="text-3xl font-bold text-green-600">{stats.activeDisputes}</div>
-                <div className="text-gray-600">Active Disputes</div>
+                <div className="text-3xl font-bold text-green-600 dark:text-green-400">{stats.activeDisputes}</div>
+                <div className="text-gray-600 dark:text-gray-400">Active Disputes</div>
               </motion.div>
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -174,8 +174,8 @@ export default function Home() {
                 transition={{ duration: 0.8, delay: 0.3 }}
                 className="text-center"
               >
-                <div className="text-3xl font-bold text-purple-600">{stats.totalUsers}</div>
-                <div className="text-gray-600">Total Users</div>
+                <div className="text-3xl font-bold text-purple-600 dark:text-purple-400">{stats.totalUsers}</div>
+                <div className="text-gray-600 dark:text-gray-400">Total Users</div>
               </motion.div>
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -183,23 +183,23 @@ export default function Home() {
                 transition={{ duration: 0.8, delay: 0.4 }}
                 className="text-center"
               >
-                <div className="text-3xl font-bold text-orange-600">
+                <div className="text-3xl font-bold text-orange-600 dark:text-orange-400">
                   ${(stats.totalVolume / 1000000).toFixed(1)}M
                 </div>
-                <div className="text-gray-600">Total Volume</div>
+                <div className="text-gray-600 dark:text-gray-400">Total Volume</div>
               </motion.div>
             </div>
           </div>
         </section>
 
         {/* Features Section */}
-        <section className="py-20 bg-gray-50">
+        <section className="py-20 bg-gray-50 dark:bg-gray-800/50">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-16">
-              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-gray-100 mb-4">
                 How Aegora Works
               </h2>
-              <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
                 Our decentralized arbitration system ensures fair, transparent, and efficient 
                 dispute resolution for Web3 transactions.
               </p>
@@ -212,13 +212,13 @@ export default function Home() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.8, delay: index * 0.1 }}
-                  className="bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow"
+                  className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm hover:shadow-md dark:hover:shadow-lg transition-shadow border border-gray-200 dark:border-gray-700"
                 >
                   <feature.icon className={`w-12 h-12 ${feature.color} mb-4`} />
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
                     {feature.title}
                   </h3>
-                  <p className="text-gray-600">
+                  <p className="text-gray-600 dark:text-gray-300">
                     {feature.description}
                   </p>
                 </motion.div>
@@ -228,7 +228,7 @@ export default function Home() {
         </section>
 
         {/* Benefits Section */}
-        <section className="py-20 bg-white">
+        <section className="py-20 bg-white dark:bg-gray-900">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="grid lg:grid-cols-2 gap-12 items-center">
               <motion.div
@@ -236,10 +236,10 @@ export default function Home() {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.8 }}
               >
-                <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
+                <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-gray-100 mb-6">
                   Why Choose Aegora?
                 </h2>
-                <p className="text-xl text-gray-600 mb-8">
+                <p className="text-xl text-gray-600 dark:text-gray-300 mb-8">
                   Traditional dispute resolution is slow, expensive, and often biased. 
                   Aegora provides a decentralized alternative that's fast, fair, and accessible to everyone.
                 </p>
@@ -252,8 +252,8 @@ export default function Home() {
                       transition={{ duration: 0.8, delay: index * 0.1 }}
                       className="flex items-center"
                     >
-                      <CheckCircle className="w-6 h-6 text-green-600 mr-3" />
-                      <span className="text-gray-700">{benefit}</span>
+                      <CheckCircle className="w-6 h-6 text-green-600 dark:text-green-400 mr-3" />
+                      <span className="text-gray-700 dark:text-gray-300">{benefit}</span>
                     </motion.div>
                   ))}
                 </div>
@@ -270,10 +270,10 @@ export default function Home() {
                   Join thousands of users who trust Aegora for their Web3 transactions.
                 </p>
                 <div className="space-y-4">
-                  <button className="w-full bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors">
+                  <button className="w-full bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                     Create Escrow
                   </button>
-                  <button className="w-full border border-white text-white px-6 py-3 rounded-lg font-semibold hover:bg-white hover:text-blue-600 transition-colors">
+                  <button className="w-full border border-white dark:border-gray-700 text-white px-6 py-3 rounded-lg font-semibold hover:bg-white hover:text-blue-600 dark:hover:bg-gray-800 dark:hover:text-blue-400 transition-colors">
                     Become a Juror
                   </button>
                 </div>
@@ -283,13 +283,13 @@ export default function Home() {
         </section>
 
         {/* Use Cases Section */}
-        <section className="py-20 bg-gray-50">
+        <section className="py-20 bg-gray-50 dark:bg-gray-800/50">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-16">
-              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-gray-100 mb-4">
                 Use Cases
               </h2>
-              <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
                 Aegora can be integrated into any Web3 platform that needs trust and dispute resolution.
               </p>
             </div>
@@ -320,15 +320,15 @@ export default function Home() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.8, delay: index * 0.1 }}
-                  className="bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow"
+                  className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm hover:shadow-md dark:hover:shadow-lg transition-shadow border border-gray-200 dark:border-gray-700"
                 >
                   <div className={`w-12 h-12 ${useCase.color} rounded-lg flex items-center justify-center mb-4`}>
                     <useCase.icon className="w-6 h-6" />
                   </div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
                     {useCase.title}
                   </h3>
-                  <p className="text-gray-600">
+                  <p className="text-gray-600 dark:text-gray-300">
                     {useCase.description}
                   </p>
                 </motion.div>
@@ -345,18 +345,18 @@ export default function Home() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8 }}
             >
-              <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+              <h2 className="text-3xl md:text-4xl font-bold text-white dark:text-gray-100 mb-4">
                 Start Building Trust Today
               </h2>
-              <p className="text-xl text-blue-100 mb-8 max-w-3xl mx-auto">
+              <p className="text-xl text-blue-100 dark:text-gray-300 mb-8 max-w-3xl mx-auto">
                 Join the decentralized future of dispute resolution. 
                 Create your first escrow or become a juror in our arbitration system.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <button className="px-8 py-3 bg-white text-blue-600 rounded-lg font-semibold hover:bg-gray-100 transition-colors">
+                <button className="px-8 py-3 bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 rounded-lg font-semibold hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                   Get Started
                 </button>
-                <button className="px-8 py-3 border border-white text-white rounded-lg font-semibold hover:bg-white hover:text-blue-600 transition-colors">
+                <button className="px-8 py-3 border border-white dark:border-gray-700 text-white dark:text-gray-100 rounded-lg font-semibold hover:bg-white hover:text-blue-600 dark:hover:bg-gray-800 dark:hover:text-blue-400 transition-colors">
                   View Documentation
                 </button>
               </div>
@@ -365,12 +365,12 @@ export default function Home() {
         </section>
 
         {/* Footer */}
-        <footer className="bg-gray-900 text-white py-12">
+        <footer className="bg-gray-900 dark:bg-black text-white py-12">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="grid md:grid-cols-4 gap-8">
               <div>
                 <h3 className="text-xl font-bold mb-4">Aegora</h3>
-                <p className="text-gray-400">
+                <p className="text-gray-400 dark:text-gray-500">
                   Decentralized arbitration and trust marketplace for Web3.
                 </p>
               </div>
