@@ -34,16 +34,16 @@ export default function ThemeToggle() {
       onClick={toggle}
       aria-label="Toggle dark mode"
       aria-pressed={theme === 'dark'}
-      className="px-3 py-2 rounded-md text-sm font-medium transition-colors border border-gray-300 text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800 flex items-center gap-2"
+      className="px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2 shadow-sm hover:shadow-md"
     >
       {theme === 'dark' ? (
         <>
-          <Sun className="w-4 h-4" />
+          <Sun className="w-4 h-4 text-yellow-500" />
           <span className="hidden sm:inline">Light</span>
         </>
       ) : (
         <>
-          <Moon className="w-4 h-4" />
+          <Moon className="w-4 h-4 text-blue-600" />
           <span className="hidden sm:inline">Dark</span>
         </>
       )}

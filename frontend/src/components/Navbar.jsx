@@ -99,7 +99,7 @@ const Navbar = () => {
           {/* Connect + Balance */}
           <div className="hidden md:flex items-center space-x-4">
             {aegBalance && (
-              <div className="text-sm text-gray-700">
+              <div className="text-sm text-gray-700 dark:text-gray-300">
                 AEG: <span className="font-semibold">{aegBalance.formatted}</span>
               </div>
             )}

@@ -72,9 +72,10 @@ function MyApp({ Component, pageProps }) {
             toastOptions={{
               duration: 4000,
               style: {
-                background: '#363636',
-                color: '#fff',
+                background: 'var(--toast-bg, #363636)',
+                color: 'var(--toast-color, #fff)',
               },
+              className: 'dark:bg-gray-800 dark:text-gray-100 dark:border dark:border-gray-700',
               success: {
                 duration: 3000,
                 iconTheme: {

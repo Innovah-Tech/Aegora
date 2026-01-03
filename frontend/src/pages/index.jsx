@@ -376,33 +376,33 @@ export default function Home() {
               </div>
               <div>
                 <h4 className="font-semibold mb-4">Product</h4>
-                <ul className="space-y-2 text-gray-400">
-                  <li><a href="#" className="hover:text-white">Escrow</a></li>
-                  <li><a href="#" className="hover:text-white">Arbitration</a></li>
-                  <li><a href="#" className="hover:text-white">Reputation</a></li>
-                  <li><a href="#" className="hover:text-white">Governance</a></li>
+                <ul className="space-y-2 text-gray-400 dark:text-gray-500">
+                  <li><a href="#" className="hover:text-white dark:hover:text-gray-300">Escrow</a></li>
+                  <li><a href="#" className="hover:text-white dark:hover:text-gray-300">Arbitration</a></li>
+                  <li><a href="#" className="hover:text-white dark:hover:text-gray-300">Reputation</a></li>
+                  <li><a href="#" className="hover:text-white dark:hover:text-gray-300">Governance</a></li>
                 </ul>
               </div>
               <div>
                 <h4 className="font-semibold mb-4">Resources</h4>
-                <ul className="space-y-2 text-gray-400">
-                  <li><a href="#" className="hover:text-white">Documentation</a></li>
-                  <li><a href="#" className="hover:text-white">API</a></li>
-                  <li><a href="#" className="hover:text-white">GitHub</a></li>
-                  <li><a href="#" className="hover:text-white">Blog</a></li>
+                <ul className="space-y-2 text-gray-400 dark:text-gray-500">
+                  <li><a href="#" className="hover:text-white dark:hover:text-gray-300">Documentation</a></li>
+                  <li><a href="#" className="hover:text-white dark:hover:text-gray-300">API</a></li>
+                  <li><a href="#" className="hover:text-white dark:hover:text-gray-300">GitHub</a></li>
+                  <li><a href="#" className="hover:text-white dark:hover:text-gray-300">Blog</a></li>
                 </ul>
               </div>
               <div>
                 <h4 className="font-semibold mb-4">Community</h4>
-                <ul className="space-y-2 text-gray-400">
-                  <li><a href="#" className="hover:text-white">Discord</a></li>
-                  <li><a href="#" className="hover:text-white">Twitter</a></li>
-                  <li><a href="#" className="hover:text-white">Telegram</a></li>
-                  <li><a href="#" className="hover:text-white">Forum</a></li>
+                <ul className="space-y-2 text-gray-400 dark:text-gray-500">
+                  <li><a href="#" className="hover:text-white dark:hover:text-gray-300">Discord</a></li>
+                  <li><a href="#" className="hover:text-white dark:hover:text-gray-300">Twitter</a></li>
+                  <li><a href="#" className="hover:text-white dark:hover:text-gray-300">Telegram</a></li>
+                  <li><a href="#" className="hover:text-white dark:hover:text-gray-300">Forum</a></li>
                 </ul>
               </div>
             </div>
-            <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
+            <div className="border-t border-gray-800 dark:border-gray-900 mt-8 pt-8 text-center text-gray-400 dark:text-gray-500">
               <p>&copy; 2024 Aegora. All rights reserved.</p>
             </div>
           </div>
