@@ -18,6 +18,7 @@ import { StatsSkeleton, EscrowCardSkeleton } from '../components/Skeleton';
 import { IPFSUpload } from '../components/IPFSUpload';
 import config from '../config/env';
 import { showToast } from '../utils/toast';
+import { fetchJson, ApiError } from '../utils/http';
 import { useCreateEscrowETH, useCreateDispute } from '../utils/contracts';
 import { isValidIPFSHash } from '../utils/ipfs';
 
@@ -42,19 +43,16 @@ export default function EscrowPage() {
     try {
       setLoading(true);
       setErrorMsg('');
-      const response = await fetch(`${config.apiUrl}/api/escrow`);
-      if (!response.ok) {
-        const text = await response.text();
-        throw new Error(text || `Request failed with status ${response.status}`);
-      }
-      const data = await response.json();
+      const data = await fetchJson(`${config.apiUrl}/api/escrow`);
       
       if (data.success) {
         setEscrows(data.data);
       }
     } catch (error) {
       console.error('Error fetching escrows:', error);
-      const errorMessage = error?.message || 'Failed to load escrows. Is the backend and MongoDB running?';
+      const errorMessage = error instanceof ApiError && error.status === 503
+        ? 'Backend service is temporarily unavailable. Please try again later.'
+        : error?.message || 'Failed to load escrows. Is the backend and MongoDB running?';
       setErrorMsg(errorMessage);
       showToast.error(errorMessage);
     } finally {

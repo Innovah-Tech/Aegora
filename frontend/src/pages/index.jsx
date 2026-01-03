@@ -48,9 +48,16 @@ export default function Home() {
         });
       } catch (error) {
         console.error('Error fetching stats:', error);
-        const human = error instanceof ApiError
-          ? `${error.message}${error.status ? ` (HTTP ${error.status})` : ''}`
-          : 'Unexpected error while loading stats';
+        let human;
+        if (error instanceof ApiError) {
+          if (error.status === 503) {
+            human = 'Backend service is temporarily unavailable. Stats will be available when the service is restored.';
+          } else {
+            human = `${error.message}${error.status ? ` (HTTP ${error.status})` : ''}`;
+          }
+        } else {
+          human = 'Unexpected error while loading stats';
+        }
         setErrorMsg(human);
       }
     };

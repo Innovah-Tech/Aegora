@@ -49,14 +49,31 @@ const Navbar = () => {
           {/* Logo */}
           <div className="flex items-center">
             <Link href="/" className="flex items-center space-x-2 hover:opacity-80 transition-opacity">
-              <img
-                src="/images/logo.svg"
-                alt="Aegora Logo"
-                width={32}
-                height={32}
+              <svg
+                width="32"
+                height="32"
+                viewBox="0 0 32 32"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
                 className="w-8 h-8 rounded flex-shrink-0"
-                style={{ display: 'block' }}
-              />
+              >
+                <defs>
+                  <linearGradient id="aegoraGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" style={{ stopColor: '#3B82F6', stopOpacity: 1 }} />
+                    <stop offset="100%" style={{ stopColor: '#1D4ED8', stopOpacity: 1 }} />
+                  </linearGradient>
+                </defs>
+                <rect width="32" height="32" rx="8" fill="url(#aegoraGradient)"/>
+                <g transform="translate(16, 16)">
+                  <line x1="0" y1="-8" x2="0" y2="4" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+                  <line x1="-6" y1="0" x2="6" y2="0" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+                  <ellipse cx="-6" cy="2" rx="3" ry="1.5" fill="white" opacity="0.9"/>
+                  <line x1="-6" y1="0" x2="-6" y2="2" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
+                  <ellipse cx="6" cy="2" rx="3" ry="1.5" fill="white" opacity="0.9"/>
+                  <line x1="6" y1="0" x2="6" y2="2" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
+                  <path d="M 0 -10 L -4 -6 L -4 -2 L 0 0 L 4 -2 L 4 -6 Z" fill="white" opacity="0.7"/>
+                </g>
+              </svg>
               <span className="text-xl font-bold text-gray-900 dark:text-gray-100">Aegora</span>
             </Link>
           </div>
