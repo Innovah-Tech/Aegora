@@ -22,6 +22,7 @@ import Navbar from '../components/Navbar';
 import { StatsSkeleton } from '../components/Skeleton';
 import TransactionHistory from '../components/TransactionHistory';
 import config from '../config/env';
+import { fetchJson } from '../utils/http';
 import { showToast } from '../utils/toast';
 import { useRegisterJuror } from '../utils/contracts';
 
@@ -75,15 +76,14 @@ export default function DisputesPage() {
 
   const fetchJurorStats = async () => {
     try {
-      const response = await fetch(`${config.apiUrl}/api/jurors/stats/overview`);
-      if (!response.ok) return;
-      const data = await response.json();
+      const data = await fetchJson(`${config.apiUrl}/api/jurors/stats/overview`, { timeoutMs: 15000 });
       
       if (data.success) {
         setJurorStats(data.data);
       }
     } catch (error) {
-      console.error('Error fetching juror stats:', error);
+      // Silently fail - stats are not critical for the page to function
+      console.warn('Error fetching juror stats:', error);
     }
   };
 

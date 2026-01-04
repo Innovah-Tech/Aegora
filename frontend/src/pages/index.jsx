@@ -30,35 +30,62 @@ export default function Home() {
   const [errorMsg, setErrorMsg] = useState('');
 
   useEffect(() => {
-    // Fetch stats from API
+    // Fetch stats from API with graceful error handling
     const fetchStats = async () => {
       try {
         setErrorMsg('');
-        const [escrowData, disputeData, reputationData] = await Promise.all([
-          fetchJson(`${config.apiUrl}/api/escrow/stats/overview`),
-          fetchJson(`${config.apiUrl}/api/disputes/stats/overview`),
-          fetchJson(`${config.apiUrl}/api/reputation/stats/overview`)
+        // Use allSettled so individual failures don't break everything
+        // Increase timeout to 15s for cold starts
+        const results = await Promise.allSettled([
+          fetchJson(`${config.apiUrl}/api/escrow/stats/overview`, { timeoutMs: 15000 }),
+          fetchJson(`${config.apiUrl}/api/disputes/stats/overview`, { timeoutMs: 15000 }),
+          fetchJson(`${config.apiUrl}/api/reputation/stats/overview`, { timeoutMs: 15000 })
         ]);
 
-        setStats({
-          totalEscrows: escrowData.data?.total || 0,
-          activeDisputes: disputeData.data?.active || 0,
-          totalUsers: reputationData.data?.totalUsers || 0,
-          totalVolume: escrowData.data?.byStatus?.reduce((sum, item) => sum + item.totalAmount, 0) || 0
-        });
-      } catch (error) {
-        console.error('Error fetching stats:', error);
-        let human;
-        if (error instanceof ApiError) {
-          if (error.status === 503) {
-            human = 'Backend service is temporarily unavailable. Stats will be available when the service is restored.';
-          } else {
-            human = `${error.message}${error.status ? ` (HTTP ${error.status})` : ''}`;
-          }
-        } else {
-          human = 'Unexpected error while loading stats';
+        const [escrowResult, disputeResult, reputationResult] = results;
+
+        // Extract data from successful requests, use defaults for failures
+        const escrowData = escrowResult.status === 'fulfilled' ? escrowResult.value : null;
+        const disputeData = disputeResult.status === 'fulfilled' ? disputeResult.value : null;
+        const reputationData = reputationResult.status === 'fulfilled' ? reputationResult.value : null;
+
+        // Log errors but don't break the page
+        if (escrowResult.status === 'rejected') {
+          console.warn('Failed to fetch escrow stats:', escrowResult.reason);
         }
-        setErrorMsg(human);
+        if (disputeResult.status === 'rejected') {
+          console.warn('Failed to fetch dispute stats:', disputeResult.reason);
+        }
+        if (reputationResult.status === 'rejected') {
+          console.warn('Failed to fetch reputation stats:', reputationResult.reason);
+        }
+
+        // Set stats with defaults for any failed requests
+        setStats({
+          totalEscrows: escrowData?.data?.total || 0,
+          activeDisputes: disputeData?.data?.active || 0,
+          totalUsers: reputationData?.data?.totalUsers || 0,
+          totalVolume: escrowData?.data?.byStatus?.reduce((sum, item) => sum + item.totalAmount, 0) || 0
+        });
+
+        // Only show error message if all requests failed
+        const allFailed = results.every(r => r.status === 'rejected');
+        if (allFailed) {
+          const firstError = results.find(r => r.status === 'rejected')?.reason;
+          if (firstError instanceof ApiError) {
+            if (firstError.status === 503 || firstError.status === 408) {
+              setErrorMsg('Backend service is temporarily unavailable. Stats will be available when the service is restored.');
+            } else {
+              setErrorMsg('Unable to load statistics. The backend may be starting up or unavailable.');
+            }
+          } else {
+            setErrorMsg('Unable to load statistics. Please try refreshing the page.');
+          }
+        }
+      } catch (error) {
+        // Fallback for unexpected errors
+        console.error('Unexpected error fetching stats:', error);
+        setErrorMsg('Unable to load statistics. Please try refreshing the page.');
       }
     };
 
